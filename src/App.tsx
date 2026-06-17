@@ -1,4 +1,5 @@
 import {
+  ArrowLeftRight,
   Archive,
   BookOpenText,
   Check,
@@ -6,6 +7,7 @@ import {
   Database,
   FileText,
   ListChecks,
+  NotebookTabs,
   PanelRight,
   Play,
   RotateCcw,
@@ -35,7 +37,50 @@ const initialDraft: DraftState = {
   sources: defaultSources,
 };
 
+type ProjectInterface = "editorial-studio" | "project-brief";
+
+const projectChoices: Record<
+  ProjectInterface,
+  {
+    title: string;
+    label: string;
+    description: string;
+  }
+> = {
+  "editorial-studio": {
+    title: "Editorial Studio",
+    label: "Threadneedle editor",
+    description: "Write, paste, analyze, approve, and save chapter reports.",
+  },
+  "project-brief": {
+    title: "Project Brief",
+    label: "Prompt and setup",
+    description: "Review the operating rules, data readiness, and integration plan.",
+  },
+};
+
 function App() {
+  const [activeProject, setActiveProject] = useState<ProjectInterface>(() => getProjectFromHash());
+
+  useEffect(() => {
+    const onHashChange = () => setActiveProject(getProjectFromHash());
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  function navigateToProject(project: ProjectInterface) {
+    window.location.hash = project;
+    setActiveProject(project);
+  }
+
+  if (activeProject === "project-brief") {
+    return <ProjectBrief onChangeProject={() => navigateToProject("editorial-studio")} />;
+  }
+
+  return <EditorialStudio onChangeProject={() => navigateToProject("project-brief")} />;
+}
+
+function EditorialStudio({ onChangeProject }: { onChangeProject: () => void }) {
   const draftId = useMemo(() => getActiveDraftId(), []);
   const [draft, setDraft] = useState<DraftState>(() => loadLocalDraft());
   const [report, setReport] = useState<AnalysisReport | null>(null);
@@ -147,6 +192,11 @@ function App() {
             <h1>Editorial Studio</h1>
           </div>
         </div>
+
+        <button className="primary-button wide-button" type="button" onClick={onChangeProject}>
+          <ArrowLeftRight size={18} aria-hidden="true" />
+          Change Project
+        </button>
 
         <section className="sidebar-section">
           <div className="section-title">
@@ -443,6 +493,102 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
+function ProjectBrief({ onChangeProject }: { onChangeProject: () => void }) {
+  return (
+    <div className="project-brief-shell">
+      <aside className="project-brief-sidebar">
+        <div className="brand-mark">
+          <div className="brand-icon">
+            <NotebookTabs size={24} aria-hidden="true" />
+          </div>
+          <div>
+            <p className="eyebrow">Threadneedle</p>
+            <h1>Project Brief</h1>
+          </div>
+        </div>
+
+        <div className="project-picker" aria-label="Available interfaces">
+          {(Object.keys(projectChoices) as ProjectInterface[]).map((project) => (
+            <a
+              className={`project-choice ${project === "project-brief" ? "selected" : ""}`}
+              href={`#${project}`}
+              key={project}
+            >
+              <span>{projectChoices[project].label}</span>
+              <strong>{projectChoices[project].title}</strong>
+              <small>{projectChoices[project].description}</small>
+            </a>
+          ))}
+        </div>
+
+        <button className="primary-button wide-button" type="button" onClick={onChangeProject}>
+          <ArrowLeftRight size={18} aria-hidden="true" />
+          Change Project
+        </button>
+      </aside>
+
+      <main className="project-brief-main">
+        <header className="brief-header">
+          <div>
+            <p className="eyebrow">Prompt and setup</p>
+            <h2>Fiction Editing Control Room</h2>
+          </div>
+          <button className="ghost-button project-switch-button" type="button" onClick={onChangeProject}>
+            <ArrowLeftRight size={18} aria-hidden="true" />
+            Change Project
+          </button>
+        </header>
+
+        <section className="brief-board" aria-label="Project setup overview">
+          <article className="brief-panel">
+            <span>01</span>
+            <h3>Mode Rules</h3>
+            <p>
+              Copyedit mode stays mechanical. Continuity Diagnosis mode produces diagnostic flags, repetition patterns,
+              questions, and canon candidates without rewriting scenes.
+            </p>
+          </article>
+          <article className="brief-panel">
+            <span>02</span>
+            <h3>AI Layer</h3>
+            <p>
+              The editor calls `/api/analyze` when an OpenAI key is present and falls back to the local mock analyzer
+              when the API is offline.
+            </p>
+          </article>
+          <article className="brief-panel">
+            <span>03</span>
+            <h3>Database Layer</h3>
+            <p>
+              Drafts and reports are prepared for Firestore per local user. The UI also keeps a local draft cache so the
+              screen remains usable while configuration is in progress.
+            </p>
+          </article>
+        </section>
+
+        <section className="brief-workflow" aria-label="Current workflow">
+          <div>
+            <h3>Editorial Flow</h3>
+            <ol>
+              <li>Select copyedit or continuity mode in the editor.</li>
+              <li>Paste chapter text and mark available source context as ready.</li>
+              <li>Run the review, inspect flags, and copy or approve output.</li>
+            </ol>
+          </div>
+          <div>
+            <h3>Configuration Queue</h3>
+            <ol>
+              <li>Add final OpenAI model and prompt strategy.</li>
+              <li>Confirm Firebase project credentials and security rules.</li>
+              <li>Add upload/parsing for manuscripts, bible, timelines, and clue trackers.</li>
+            </ol>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
 function loadLocalDraft() {
   try {
     const cached = window.localStorage.getItem(storageKey);
@@ -450,6 +596,11 @@ function loadLocalDraft() {
   } catch {
     return initialDraft;
   }
+}
+
+function getProjectFromHash(): ProjectInterface {
+  const hash = window.location.hash.replace("#", "");
+  return hash === "project-brief" || hash === "editorial-studio" ? hash : "editorial-studio";
 }
 
 function getStats(text: string) {

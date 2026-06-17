@@ -312,6 +312,14 @@ textarea:focus {
   color: white;
 }
 
+.wide-button {
+  width: 100%;
+}
+
+.project-switch-button {
+  white-space: nowrap;
+}
+
 .icon-button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -621,6 +629,156 @@ dd {
   padding: 24px;
 }
 
+.project-brief-shell {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  background: #f4f2ec;
+}
+
+.project-brief-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 0;
+  overflow: auto;
+  padding: 24px;
+  background: #173f43;
+  color: #f7f3e8;
+}
+
+.project-picker {
+  display: grid;
+  gap: 10px;
+}
+
+.project-choice {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  text-decoration: none;
+}
+
+.project-choice span {
+  color: #b9d8d2;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.project-choice strong {
+  font-size: 1rem;
+}
+
+.project-choice small {
+  color: #dceee9;
+  line-height: 1.4;
+}
+
+.project-choice.selected {
+  background: #f7f3e8;
+  color: #173f43;
+  border-color: #f7f3e8;
+}
+
+.project-choice.selected span,
+.project-choice.selected small {
+  color: #5f6d68;
+}
+
+.project-brief-main {
+  display: grid;
+  grid-template-rows: auto minmax(0, auto) minmax(0, 1fr);
+  gap: 18px;
+  min-height: 0;
+  overflow: auto;
+  padding: 24px;
+}
+
+.brief-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #d9d4c7;
+  border-radius: 8px;
+  background: #fffdfa;
+}
+
+.brief-header h2 {
+  margin: 0;
+  color: #173f43;
+  font-size: clamp(1.35rem, 2vw, 2rem);
+  letter-spacing: 0;
+}
+
+.brief-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.brief-panel {
+  display: grid;
+  gap: 12px;
+  min-height: 220px;
+  padding: 18px;
+  border: 1px solid #d9d4c7;
+  border-radius: 8px;
+  background: #fffdfa;
+}
+
+.brief-panel span {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: #f0b35b;
+  color: #173f43;
+  font-weight: 900;
+}
+
+.brief-panel h3,
+.brief-workflow h3 {
+  margin: 0;
+  color: #173f43;
+  letter-spacing: 0;
+}
+
+.brief-panel p {
+  margin: 0;
+  color: #3c3c38;
+  line-height: 1.55;
+}
+
+.brief-workflow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.brief-workflow > div {
+  padding: 18px;
+  border: 1px solid #d9d4c7;
+  border-radius: 8px;
+  background: #fffdfa;
+}
+
+.brief-workflow ol {
+  margin: 12px 0 0;
+  padding-left: 20px;
+  color: #3c3c38;
+  line-height: 1.65;
+}
+
 @media (max-width: 1120px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -636,8 +794,22 @@ dd {
   }
 
   .source-list,
-  .mode-stack {
+  .mode-stack,
+  .brief-board,
+  .brief-workflow {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .project-brief-shell {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .project-brief-sidebar,
+  .project-brief-main {
+    overflow: visible;
   }
 
   .workspace-header,
@@ -668,7 +840,9 @@ dd {
   .source-list,
   .mode-stack,
   .project-fields,
-  .status-grid {
+  .status-grid,
+  .brief-board,
+  .brief-workflow {
     grid-template-columns: 1fr;
   }
 
@@ -676,10 +850,17 @@ dd {
     align-items: stretch;
   }
 
-  .header-actions {
-    justify-content: stretch;
+  .brief-header {
+    align-items: stretch;
+    flex-direction: column;
   }
 
+  .header-actions {
+    justify-content: stretch;
+    flex-wrap: wrap;
+  }
+
+  .header-actions .project-switch-button,
   .header-actions .ghost-button,
   .header-actions .primary-button {
     flex: 1;
