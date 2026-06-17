@@ -1,0 +1,1287 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Threadneedle Street Mysteries â€” Fiction Editor</title>
+  <style>
+    /* â”€â”€ Reset & base â”€â”€ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #f4f1ea;
+      color: #2c2416;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* â”€â”€ Header â”€â”€ */
+    header {
+      background: #3b2b1a;
+      color: #f4f1ea;
+      padding: 1.2rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      border-bottom: 3px solid #c9a84c;
+    }
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 400;
+      letter-spacing: 1px;
+    }
+    header h1 span { color: #c9a84c; font-weight: 700; }
+    header .subtitle { font-size: 0.85rem; opacity: 0.8; font-style: italic; }
+    header .version { font-size: 0.7rem; opacity: 0.5; }
+
+    /* â”€â”€ Layout â”€â”€ */
+    .app-container {
+      display: flex;
+      flex: 1;
+      padding: 1.5rem;
+      gap: 1.5rem;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* â”€â”€ Sidebar â”€â”€ */
+    .sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: #e8e2d6;
+      border-radius: 8px;
+      padding: 1.2rem;
+      border: 1px solid #d4ccbc;
+    }
+    .sidebar h3 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #6b5c48;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #d4ccbc;
+      padding-bottom: 0.5rem;
+    }
+
+    /* Mode selector */
+    .mode-group { margin-bottom: 1.5rem; }
+    .mode-label {
+      display: block;
+      padding: 0.7rem 1rem;
+      background: #f4f1ea;
+      border: 1px solid #d4ccbc;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 0.4rem;
+      font-size: 0.9rem;
+      font-family: 'Georgia', serif;
+    }
+    .mode-label:hover { border-color: #c9a84c; background: #ede7db; }
+    .mode-label input { display: none; }
+    .mode-label input:checked + .mode-label-inner .mode-name { color: #3b2b1a; }
+    .mode-label input:checked + .mode-label-inner .mode-desc { color: #2c2416; }
+    .mode-label input:checked ~ .mode-label { background: #fff; }
+    .mode-label.selected {
+      background: #fff;
+      border-color: #c9a84c;
+      box-shadow: 0 0 0 1px #c9a84c;
+    }
+    .mode-label-inner { display: flex; flex-direction: column; gap: 0.15rem; }
+    .mode-name { font-weight: 700; color: #6b5c48; }
+    .mode-desc { font-size: 0.75rem; color: #8a7b67; }
+    .mode-label.selected .mode-name { color: #3b2b1a; }
+    .mode-label.selected .mode-desc { color: #5c4d3a; }
+
+    /* Book info */
+    .book-info label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #6b5c48;
+      margin: 0.6rem 0 0.25rem;
+    }
+    .book-info input, .book-info select {
+      width: 100%;
+      padding: 0.4rem 0.6rem;
+      border: 1px solid #d4ccbc;
+      border-radius: 4px;
+      font-family: 'Georgia', serif;
+      font-size: 0.85rem;
+      background: #faf8f4;
+      color: #2c2416;
+    }
+    .book-info input:focus, .book-info select:focus {
+      outline: none;
+      border-color: #c9a84c;
+    }
+
+    /* Rules toggle */
+    .rules-toggle {
+      margin-top: 1rem;
+    }
+    .rules-toggle summary {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #6b5c48;
+      cursor: pointer;
+      padding: 0.3rem 0;
+    }
+    .rules-toggle summary:hover { color: #3b2b1a; }
+    .rules-content {
+      font-size: 0.75rem;
+      color: #5c4d3a;
+      padding-left: 0.5rem;
+      border-left: 2px solid #c9a84c;
+      margin-top: 0.3rem;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .rules-content p { margin-bottom: 0.3rem; }
+    .rules-content ul { padding-left: 1rem; }
+    .rules-content li { margin-bottom: 0.2rem; }
+
+    /* â”€â”€ Main area â”€â”€ */
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      background: #e8e2d6;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      border: 1px solid #d4ccbc;
+    }
+    .toolbar .mode-indicator {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #3b2b1a;
+    }
+    .toolbar .mode-indicator span {
+      color: #c9a84c;
+    }
+    .toolbar-actions { display: flex; gap: 0.5rem; align-items: center; }
+    .file-input-hidden {
+      position: absolute;
+      width: 0;
+      height: 0;
+      opacity: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .upload-label { cursor: pointer; margin: 0; }
+
+    /* Buttons */
+    .btn {
+      padding: 0.5rem 1.2rem;
+      border: 1px solid #3b2b1a;
+      border-radius: 4px;
+      font-family: 'Georgia', serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: #f4f1ea;
+      color: #3b2b1a;
+    }
+    .btn:hover { background: #ede7db; }
+    .btn-primary {
+      background: #3b2b1a;
+      color: #f4f1ea;
+      border-color: #3b2b1a;
+    }
+    .btn-primary:hover { background: #4d3b26; }
+    .btn-gold {
+      background: #c9a84c;
+      color: #1a140b;
+      border-color: #c9a84c;
+    }
+    .btn-gold:hover { background: #d9b85c; }
+    .btn-sm { padding: 0.3rem 0.8rem; font-size: 0.8rem; }
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* â”€â”€ Editor panel â”€â”€ */
+    .editor-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      border: 1px solid #d4ccbc;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .editor-tabs {
+      display: flex;
+      border-bottom: 1px solid #d4ccbc;
+      background: #f4f1ea;
+    }
+    .editor-tab {
+      padding: 0.6rem 1.2rem;
+      font-size: 0.8rem;
+      font-family: 'Georgia', serif;
+      background: transparent;
+      border: none;
+      border-right: 1px solid #d4ccbc;
+      cursor: pointer;
+      color: #6b5c48;
+      transition: all 0.1s;
+    }
+    .editor-tab:hover { background: #ede7db; }
+    .editor-tab.active {
+      background: #fff;
+      color: #3b2b1a;
+      font-weight: 700;
+      border-bottom: 2px solid #c9a84c;
+    }
+    .editor-pane {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+    }
+    .editor-pane.active { display: flex; }
+
+    /* Textarea */
+    .editor-pane textarea {
+      flex: 1;
+      width: 100%;
+      min-height: 280px;
+      padding: 1.2rem;
+      border: none;
+      font-family: 'Georgia', serif;
+      font-size: 0.95rem;
+      line-height: 1.7;
+      resize: vertical;
+      background: #faf8f4;
+      color: #2c2416;
+    }
+    .editor-pane textarea:focus {
+      outline: none;
+      background: #fff;
+    }
+    .editor-pane textarea::placeholder {
+      color: #b8aa96;
+      font-style: italic;
+    }
+    .pane-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      background: #f4f1ea;
+      border-top: 1px solid #d4ccbc;
+      font-size: 0.75rem;
+      color: #8a7b67;
+    }
+
+    /* â”€â”€ Output panel â”€â”€ */
+    .output-panel {
+      background: #fff;
+      border: 1px solid #d4ccbc;
+      border-radius: 8px;
+      overflow: hidden;
+      min-height: 180px;
+      display: flex;
+      flex-direction: column;
+    }
+    .output-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 1rem;
+      background: #f4f1ea;
+      border-bottom: 1px solid #d4ccbc;
+    }
+    .output-header h3 {
+      font-size: 0.85rem;
+      font-weight: 400;
+      color: #6b5c48;
+    }
+    .output-body {
+      flex: 1;
+      padding: 1rem 1.2rem;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #2c2416;
+      overflow-y: auto;
+      max-height: 380px;
+    }
+    .output-body.empty {
+      color: #b8aa96;
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* â”€â”€ Output formatting â”€â”€ */
+    .flag-card {
+      background: #fcf9f4;
+      border-left: 3px solid #c9a84c;
+      padding: 0.8rem 1rem;
+      margin-bottom: 0.8rem;
+      border-radius: 0 4px 4px 0;
+    }
+    .flag-card h4 { font-size: 0.9rem; margin-bottom: 0.3rem; color: #3b2b1a; }
+    .flag-meta { font-size: 0.75rem; color: #8a7b67; margin-bottom: 0.3rem; }
+    .flag-meta .severity-minor { color: #6b9e6b; }
+    .flag-meta .severity-medium { color: #c9a84c; }
+    .flag-meta .severity-major { color: #a05050; }
+    .flag-card p { font-size: 0.85rem; margin-bottom: 0.25rem; }
+    .flag-card .label { font-weight: 700; color: #5c4d3a; }
+    .fix-list { margin-top: 0.5rem; padding-left: 1.2rem; font-size: 0.8rem; }
+    .fix-list li { margin-bottom: 0.3rem; }
+
+    .repetition-card {
+      background: #f0ece3;
+      border-left: 3px solid #8a7b67;
+      padding: 0.8rem 1rem;
+      margin-bottom: 0.8rem;
+      border-radius: 0 4px 4px 0;
+    }
+    .repetition-card h4 { font-size: 0.85rem; color: #5c4d3a; }
+
+    .summary-box {
+      background: #3b2b1a;
+      color: #f4f1ea;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+    }
+    .summary-box h4 { color: #c9a84c; margin-bottom: 0.5rem; }
+    .summary-box ul { padding-left: 1.2rem; font-size: 0.85rem; }
+    .summary-box li { margin-bottom: 0.2rem; }
+
+    /* â”€â”€ Status bar â”€â”€ */
+    .status-bar {
+      background: #e8e2d6;
+      border-top: 1px solid #d4ccbc;
+      padding: 0.4rem 2rem;
+      font-size: 0.75rem;
+      color: #6b5c48;
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    /* â”€â”€ Loading spinner â”€â”€ */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid #d4ccbc;
+      border-top-color: #3b2b1a;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 0.4rem;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* â”€â”€ Responsive â”€â”€ */
+    @media (max-width: 768px) {
+      .app-container { flex-direction: column; padding: 1rem; }
+      .sidebar { width: 100%; }
+      .toolbar { flex-direction: column; align-items: stretch; text-align: center; }
+      .toolbar-actions { justify-content: center; }
+      header h1 { font-size: 1rem; }
+    }
+
+    /* â”€â”€ Scrollbar â”€â”€ */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #f4f1ea; }
+    ::-webkit-scrollbar-thumb { background: #d4ccbc; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #b8aa96; }
+
+    /* â”€â”€ History / DB â”€â”€ */
+    .history-section { margin-top: 1.5rem; }
+    .history-list {
+      max-height: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .history-item {
+      padding: 0.5rem 0.6rem;
+      background: #f4f1ea;
+      border: 1px solid #d4ccbc;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: all 0.15s;
+    }
+    .history-item:hover { border-color: #c9a84c; background: #fff; }
+    .history-item.active {
+      border-color: #c9a84c;
+      background: #fff;
+      box-shadow: 0 0 0 1px #c9a84c;
+    }
+    .history-item .hi-title { font-weight: 700; color: #3b2b1a; }
+    .history-item .hi-meta { color: #8a7b67; margin-top: 0.15rem; }
+    .history-empty { font-size: 0.75rem; color: #8a7b67; font-style: italic; }
+    .db-status {
+      font-size: 0.7rem;
+      margin-top: 0.5rem;
+      padding: 0.35rem 0.5rem;
+      border-radius: 4px;
+      background: #f4f1ea;
+      color: #6b5c48;
+    }
+    .db-status.connected { color: #3d6b3d; }
+    .db-status.error { color: #a05050; }
+
+    .output-body pre, .output-body .ai-report {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Georgia', serif;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+    .output-body .ai-report h4 {
+      font-size: 0.95rem;
+      color: #3b2b1a;
+      margin: 1rem 0 0.4rem;
+    }
+    .output-body .ai-report h4:first-child { margin-top: 0; }
+
+    /* â”€â”€ Print â”€â”€ */
+    @media print {
+      .sidebar, .toolbar, .pane-footer, .status-bar { display: none; }
+      .output-body { max-height: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Threadneedle Street <span>Mysteries</span></h1>
+    <div class="subtitle">Fiction Editor â€” A Pattern of Lies (Book 3)</div>
+  </div>
+  <div class="version">v0.1 Â· pre-alpha</div>
+</header>
+
+<div class="app-container">
+
+  <!-- â”€â”€â”€ SIDEBAR â”€â”€â”€ -->
+  <aside class="sidebar">
+    <h3>Mode</h3>
+
+    <div class="mode-group" id="modeGroup">
+      <label class="mode-label selected" data-mode="copyedit">
+        <input type="radio" name="mode" value="copyedit" checked>
+        <div class="mode-label-inner">
+          <span class="mode-name">Copyedit Mode</span>
+          <span class="mode-desc">Spelling, grammar, punctuation, repeated words</span>
+        </div>
+      </label>
+      <label class="mode-label" data-mode="continuity">
+        <input type="radio" name="mode" value="continuity">
+        <div class="mode-label-inner">
+          <span class="mode-name">Continuity Diagnosis</span>
+          <span class="mode-desc">Character, plot, timeline, object, clue consistency</span>
+        </div>
+      </label>
+    </div>
+
+    <div class="book-info">
+      <label for="chapterNum">Chapter</label>
+      <input type="number" id="chapterNum" value="1" min="1" max="99">
+
+      <label for="prevChapter">Previous chapter</label>
+      <input type="number" id="prevChapter" value="0" min="0" max="99">
+
+      <label for="bookSelect">Book</label>
+      <select id="bookSelect">
+        <option value="3" selected>A Pattern of Lies (Book 3)</option>
+        <option value="2">Book 2</option>
+        <option value="1">Book 1</option>
+      </select>
+    </div>
+
+    <details class="rules-toggle">
+      <summary>Current rules</summary>
+      <div class="rules-content" id="rulesContent">
+        <p><strong>Copyedit Mode rules:</strong></p>
+        <ul>
+          <li>Review only the submitted chapter text.</li>
+          <li>Do not check continuity unless asked.</li>
+          <li>First provide a quick list of mechanical issues.</li>
+          <li>Do not output the corrected chapter until approved.</li>
+          <li>Do not improve style, flow, voice, pacing, etc.</li>
+          <li>Flag repeated words that appear too close together.</li>
+        </ul>
+      </div>
+    </details>
+
+    <div class="history-section">
+      <h3>Saved Reviews</h3>
+      <div class="history-list" id="historyList">
+        <div class="history-empty">No saved reviews yet</div>
+      </div>
+      <div class="db-status" id="dbStatus">Connecting to database...</div>
+    </div>
+  </aside>
+
+  <!-- â”€â”€â”€ MAIN â”€â”€â”€ -->
+  <div class="main-area">
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="mode-indicator">
+        Mode: <span id="modeDisplay">Copyedit Mode</span>
+        &middot; Book 3, Chapter <span id="chDisplay">1</span>
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn btn-sm" id="clearBtn" title="Clear chapter text">Clear</button>
+        <label class="btn btn-sm upload-label" for="uploadInput" title="Upload a chapter file (.txt, .md)">Upload</label>
+        <input type="file" id="uploadInput" class="file-input-hidden" accept=".txt,.md,.text,.rtf,text/plain,text/markdown">
+        <button class="btn btn-sm" id="sampleBtn" title="Load demo chapter">Demo</button>
+        <button class="btn btn-sm" id="saveBtn" title="Save to database">Save</button>
+        <button class="btn btn-gold" id="runBtn">&#9654; Review Chapter</button>
+      </div>
+    </div>
+
+    <!-- Editor panel (tabbed) -->
+    <div class="editor-panel">
+      <div class="editor-tabs">
+        <button class="editor-tab active" data-pane="input">Chapter Text</button>
+        <button class="editor-tab" data-pane="corrected">Corrected Version</button>
+      </div>
+
+      <!-- Input pane -->
+      <div class="editor-pane active" id="pane-input">
+        <textarea id="chapterText" placeholder="Paste your chapter text here...&#10;&#10;The editor will review it for mechanical issues (Copyedit Mode) or continuity problems (Continuity Diagnosis Mode)."></textarea>
+        <div class="pane-footer">
+          <span id="wordCount">0 words</span>
+          <span id="uploadStatus">Upload or paste chapter, select mode, click Review</span>
+        </div>
+      </div>
+
+      <!-- Corrected version pane (locked until approval) -->
+      <div class="editor-pane" id="pane-corrected">
+        <textarea id="correctedText" readonly placeholder="Corrected chapter will appear here after you approve the issue list." style="background:#f4f1ea;"></textarea>
+        <div class="pane-footer">
+          <span id="correctedStatus">Waiting for approval...</span>
+          <button class="btn btn-sm" id="approveBtn" disabled>Approve &amp; Output Corrected Chapter</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Output panel -->
+    <div class="output-panel">
+      <div class="output-header">
+        <h3 id="outputTitle">Editorial Report</h3>
+        <div>
+          <button class="btn btn-sm" id="copyReportBtn">Copy Report</button>
+          <button class="btn btn-sm" id="clearReportBtn">Clear</button>
+        </div>
+      </div>
+      <div class="output-body empty" id="outputBody">
+        Click "Review Chapter" to run the editor.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Status bar -->
+<div class="status-bar">
+  <span>Project: <strong>Book 3, A Pattern of Lies</strong></span>
+  <span>Backend: <strong id="backendStatus">Firebase + OpenAI</strong></span>
+  <span id="sessionStatus">Ready</span>
+</div>
+
+<script src="config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script>
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  DOM REFS                                     */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  const $ = id => document.getElementById(id);
+  const chapterText   = $('chapterText');
+  const correctedText = $('correctedText');
+  const outputBody    = $('outputBody');
+  const modeDisplay   = $('modeDisplay');
+  const chDisplay     = $('chDisplay');
+  const wordCount     = $('wordCount');
+  const sessionStatus = $('sessionStatus');
+  const outputTitle   = $('outputTitle');
+  const correctedStatus = $('correctedStatus');
+  const rulesContent  = $('rulesContent');
+  const approveBtn    = $('approveBtn');
+  const dbStatus      = $('dbStatus');
+  const uploadInput   = $('uploadInput');
+  const uploadStatus  = $('uploadStatus');
+
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  FIREBASE                                       */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  const firebaseConfig = {
+    apiKey: "AIzaSyAaPgjFfzucF2NNZDw3czS2JKmeNBOjToQ",
+    authDomain: "omnitest-c5dd8.firebaseapp.com",
+    projectId: "omnitest-c5dd8",
+    storageBucket: "omnitest-c5dd8.firebasestorage.app",
+    messagingSenderId: "686599093140",
+    appId: "1:686599093140:web:1ba8c86051e1d58f8ead81",
+    measurementId: "G-TY3JB3W62Q"
+  };
+
+  let db = null;
+
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    dbStatus.textContent = 'Database connected';
+    dbStatus.classList.add('connected');
+  } catch (err) {
+    dbStatus.textContent = 'Database error: ' + err.message;
+    dbStatus.classList.add('error');
+  }
+
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  OPENAI / PROMPTS                             */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  const SYSTEM_PROMPT = `Overall Project Instructions You are my fiction editor for the Threadneedle Street Mysteries series. This Project has two modes. Use the mode I request. If unclear, ask whether I want Copyedit Mode or Continuity Diagnosis Mode.
+
+MODE 1: COPYEDIT MODE â€” Use only when I ask for spelling, punctuation, grammar, syntax, typos, formatting, or mechanical corrections. Review only the submitted chapter text. Do not check continuity unless asked. First provide a quick list of mechanical issues found. Do not output the corrected chapter until I approve. After approval, output the corrected chapter with only mechanical corrections. Do not improve style, flow, voice, pacing, dialogue, characterization, or creative choices. Flag repeated words that appear too close together at the mechanical level only.
+
+MODE 2: CONTINUITY DIAGNOSIS MODE â€” Use when I ask for continuity, repetition, timeline, character consistency, clue/evidence, motivation, scene logic, relationship/emotional continuity, or editorial diagnosis. Editorial diagnosis only â€” do not rewrite or polish. Use the Flag [number] and Repetition [number] formats. Include Top 3 issues, questions for author, and new canonical facts.`;
+
+  async function callOpenAI(userPrompt) {
+    const response = await fetch('/api/review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemPrompt: SYSTEM_PROMPT,
+        userPrompt: userPrompt
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Review request failed (' + response.status + ')');
+    }
+    return data.content;
+  }
+
+  function buildCopyeditPrompt(text, chapter) {
+    return `Please review the following chapter in Copyedit Mode.
+
+Book: Book 3, A Pattern of Lies
+Chapter: Chapter ${chapter}
+
+Review only for spelling, punctuation, grammar, syntax, typos, formatting, proper nouns, and accidental repeated words. Do not check continuity. Do not rewrite for style. First, give me a quick list of all mechanical issues you find. Do not output the corrected chapter yet.
+
+Chapter text:
+${text}`;
+  }
+
+  function buildContinuityPrompt(text, chapter, prev) {
+    return `Please review the following chapter in Continuity Diagnosis Mode.
+
+Book: Book 3, A Pattern of Lies
+Chapter: Chapter ${chapter}
+Placement: This chapter comes after Book 3, Chapter ${prev}, and after Books 1â€“2.
+
+Review only for editorial diagnosis issues. Do not rewrite the chapter. Return a clean diagnostic report using the Project's continuity flag format.
+
+Chapter text:
+${text}`;
+  }
+
+  function buildCorrectedPrompt(text, issuesList) {
+    return `I approved the mechanical issue list below. Output the corrected chapter with ONLY mechanical corrections applied. Do not improve style, voice, pacing, or creative choices. Output only the corrected chapter text â€” no commentary.
+
+Approved issues to fix:
+${issuesList}
+
+Original chapter text:
+${text}`;
+  }
+
+  function formatReportHtml(text) {
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    const html = escaped
+      .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+      .replace(/^## (.+)$/gm, '<h4>$1</h4>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>');
+    return '<div class="ai-report">' + html + '</div>';
+  }
+
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  FIRESTORE CRUD                               */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  async function saveReview(data) {
+    if (!db) throw new Error('Database not connected');
+    const payload = {
+      mode: data.mode,
+      book: data.book,
+      chapter: data.chapter,
+      prevChapter: data.prevChapter,
+      chapterText: data.chapterText,
+      reportText: data.reportText || '',
+      correctedText: data.correctedText || '',
+      approved: data.approved || false,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    if (data.id) {
+      await db.collection('reviews').doc(data.id).update(payload);
+      return data.id;
+    }
+    payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    const ref = await db.collection('reviews').add(payload);
+    return ref.id;
+  }
+
+  async function loadHistory() {
+    if (!db) return [];
+    const snap = await db.collection('reviews')
+      .orderBy('updatedAt', 'desc')
+      .limit(20)
+      .get();
+    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  }
+
+  async function deleteReview(id) {
+    if (!db) return;
+    await db.collection('reviews').doc(id).delete();
+  }
+
+  function renderHistory(items) {
+    const list = $('historyList');
+    if (!items.length) {
+      list.innerHTML = '<div class="history-empty">No saved reviews yet</div>';
+      return;
+    }
+    list.innerHTML = items.map(item => {
+      const modeLabel = item.mode === 'copyedit' ? 'Copyedit' : 'Continuity';
+      const date = item.updatedAt?.toDate
+        ? item.updatedAt.toDate().toLocaleString()
+        : 'Just now';
+      const active = item.id === state.currentReviewId ? ' active' : '';
+      return `<div class="history-item${active}" data-id="${item.id}">
+        <div class="hi-title">Book ${item.book}, Ch. ${item.chapter} â€” ${modeLabel}</div>
+        <div class="hi-meta">${date}</div>
+      </div>`;
+    }).join('');
+
+    list.querySelectorAll('.history-item').forEach(el => {
+      el.addEventListener('click', () => loadReviewFromHistory(el.dataset.id, items));
+    });
+  }
+
+  async function refreshHistory() {
+    try {
+      const items = await loadHistory();
+      state.historyItems = items;
+      renderHistory(items);
+    } catch (err) {
+      dbStatus.textContent = 'History load failed: ' + err.message;
+      dbStatus.classList.remove('connected');
+      dbStatus.classList.add('error');
+    }
+  }
+
+  function loadReviewFromHistory(id, items) {
+    const item = (items || state.historyItems).find(r => r.id === id);
+    if (!item) return;
+
+    state.currentReviewId = id;
+    state.mode = item.mode;
+    state.chapterNumber = item.chapter;
+    state.prevChapter = item.prevChapter || 0;
+    state.approved = item.approved || false;
+    state.lastReport = item.reportText;
+
+    document.querySelectorAll('.mode-label').forEach(l => {
+      l.classList.toggle('selected', l.dataset.mode === item.mode);
+    });
+    modeDisplay.textContent = item.mode === 'copyedit' ? 'Copyedit Mode' : 'Continuity Diagnosis';
+    $('chapterNum').value = item.chapter;
+    $('prevChapter').value = item.prevChapter || 0;
+    chDisplay.textContent = item.chapter;
+    chapterText.value = item.chapterText || '';
+    correctedText.value = item.correctedText || '';
+    updateWordCount();
+    updateRules();
+    updateOutputTitle();
+
+    if (item.reportText) {
+      outputBody.innerHTML = formatReportHtml(item.reportText);
+      outputBody.classList.remove('empty');
+    }
+
+    approveBtn.disabled = item.mode !== 'copyedit' || item.approved || !item.reportText;
+    correctedStatus.textContent = item.approved
+      ? 'Corrected chapter loaded from database.'
+      : (item.mode === 'copyedit' ? 'Quick list ready â€” approve to output corrected chapter.' : 'N/A â€” Continuity mode outputs reports only.');
+
+    renderHistory(state.historyItems);
+    setStatus('Loaded review from database');
+  }
+
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  STATE                                        */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  const state = {
+    mode: 'copyedit',
+    chapterNumber: 1,
+    prevChapter: 0,
+    approved: false,
+    lastReport: null,
+    lastIssuesList: null,
+    currentReviewId: null,
+    historyItems: []
+  };
+
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  MODE SWITCHING                               */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  document.querySelectorAll('.mode-label').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.mode-label').forEach(l => l.classList.remove('selected'));
+      el.classList.add('selected');
+      const mode = el.dataset.mode;
+      state.mode = mode;
+      modeDisplay.textContent = mode === 'copyedit' ? 'Copyedit Mode' : 'Continuity Diagnosis';
+      updateRules();
+      // Reset approval state when switching mode
+      state.approved = false;
+      approveBtn.disabled = true;
+      correctedText.value = '';
+      correctedStatus.textContent = 'Waiting for approval...';
+      updateOutputTitle();
+      setStatus(`Switched to ${mode} mode`);
+    });
+  });
+
+  function updateRules() {
+    if (state.mode === 'copyedit') {
+      rulesContent.innerHTML = `
+        <p><strong>Copyedit Mode rules:</strong></p>
+        <ul>
+          <li>Review only the submitted chapter text.</li>
+          <li>Do not check continuity unless asked.</li>
+          <li>Use the series bible only to confirm names, places, proper nouns.</li>
+          <li>First provide a <em>quick list</em> of mechanical issues found.</li>
+          <li>Do not output the corrected chapter until I approve.</li>
+          <li>After approval, output the corrected chapter with <em>only</em> mechanical corrections.</li>
+          <li>Do not improve style, flow, voice, pacing, etc.</li>
+          <li>Flag repeated words that appear too close together.</li>
+          <li>For each repeated-word issue: repeated word, exact phrase, why it stands out, suggested fix.</li>
+          <li>When outputting the corrected chapter, only change repeated words if the fix is mechanical.</li>
+        </ul>
+        <p style="margin-top:0.5rem;"><strong>Repeated-word check:</strong></p>
+        <ul>
+          <li>Same word repeated in the same sentence</li>
+          <li>Same word repeated in nearby sentences</li>
+          <li>Repeated filler words</li>
+          <li>Repeated sentence openings</li>
+          <li>Repeated dialogue tags or action beats that feel accidental</li>
+          <li>Do <em>not</em> analyze story-level or thematic repetition</li>
+        </ul>
+      `;
+    } else {
+      rulesContent.innerHTML = `
+        <p><strong>Continuity Diagnosis rules:</strong></p>
+        <ul>
+          <li>Editorial diagnosis only â€” do not rewrite or polish.</li>
+          <li>Produce a clean diagnostic report.</li>
+          <li>Use manuscripts, series bible, character notes, timelines as source.</li>
+          <li>Do not invent facts or add story details.</li>
+          <li>Check: character continuity, plot, timeline, setting, mystery, objects.</li>
+          <li>Check: relationship/romance (Grace & Daniel), world/story rules.</li>
+          <li>Check: editorial diagnosis (unclear motivation, scene logic, etc.).</li>
+          <li>Use the <strong>Flag [number]</strong> format for each issue.</li>
+          <li>Use the <strong>Repetition [number]</strong> format for echo issues.</li>
+          <li>Include: Top 3 issues, questions for author, new canonical facts.</li>
+        </ul>
+        <p style="margin-top:0.5rem;"><strong>Flag format:</strong></p>
+        <ul>
+          <li>Severity: Minor / Medium / Major</li>
+          <li>Location in chapter: exact quote</li>
+          <li>Problem statement</li>
+          <li>Why it may be a continuity issue</li>
+          <li>Conflicting source or earlier fact</li>
+          <li>3 suggested fix options</li>
+          <li>Type of fix: Line edit / Scene adjustment / Larger plot decision</li>
+        </ul>
+        <p style="margin-top:0.5rem;"><strong>Repetition format:</strong></p>
+        <ul>
+          <li>Type: accidental echo / duplicate phrase / repeated word / etc.</li>
+          <li>Exact repetition quote</li>
+          <li>First and second appearances</li>
+          <li>Why it stands out</li>
+          <li>3 suggested fixes (delete first / delete second / vary)</li>
+          <li>Recommendation: Keep / Delete / Vary / Combine</li>
+        </ul>
+      `;
+    }
+  }
+
+  function updateOutputTitle() {
+    outputTitle.textContent = state.mode === 'copyedit'
+      ? 'Mechanical Issues â€” Quick List'
+      : 'Continuity Diagnostic Report';
+  }
+
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  CHAPTER / BOOK INFO                          */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  $('chapterNum').addEventListener('input', () => {
+    state.chapterNumber = parseInt($('chapterNum').value) || 1;
+    chDisplay.textContent = state.chapterNumber;
+  });
+  $('prevChapter').addEventListener('input', () => {
+    state.prevChapter = parseInt($('prevChapter').value) || 0;
+  });
+
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  WORD COUNT                                   */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  chapterText.addEventListener('input', updateWordCount);
+  function updateWordCount() {
+    const text = chapterText.value.trim();
+    const count = text ? text.split(/\s+/).length : 0;
+    wordCount.textContent = `${count} word${count !== 1 ? 's' : ''}`;
+  }
+
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  TABS                                         */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  document.querySelectorAll('.editor-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.editor-pane').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      const paneId = 'pane-' + tab.dataset.pane;
+      document.getElementById(paneId).classList.add('active');
+    });
+  });
+
+  uploadInput.addEventListener('change', () => {
+    const file = uploadInput.files[0];
+    if (!file) return;
+
+    const allowed = /\.(txt|md|text|rtf)$/i;
+    if (!allowed.test(file.name)) {
+      setStatus('Unsupported file type — use .txt or .md');
+      uploadInput.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      chapterText.value = reader.result;
+      updateWordCount();
+
+      const chapterMatch = file.name.match(/chapter[\s_-]*(\d+)/i);
+      if (chapterMatch) {
+        state.chapterNumber = parseInt(chapterMatch[1], 10);
+        $('chapterNum').value = state.chapterNumber;
+        chDisplay.textContent = state.chapterNumber;
+      }
+
+      state.currentReviewId = null;
+      state.approved = false;
+      state.lastReport = null;
+      state.lastIssuesList = null;
+      correctedText.value = '';
+      approveBtn.disabled = true;
+      correctedStatus.textContent = 'Waiting for approval...';
+      uploadStatus.textContent = 'Loaded: ' + file.name;
+      setStatus('Uploaded ' + file.name);
+      uploadInput.value = '';
+    };
+    reader.onerror = () => {
+      setStatus('Failed to read file');
+      uploadInput.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  $('sampleBtn').addEventListener('click', () => {
+    chapterText.value = `Chapter 12
+
+Grace stood at the window of her flat on Threadneedle Street, watching the rain fall on the wet cobblestones below. The the street lamps cast long shadows across the pavement, and she could see her own reflection in the glass. She had been staring at the same page of stitching for over an hour, the needle still in her hand, the thread waiting.
+
+Daniel had called earlier. He said he had found something. Something about the missing ledger. But he wouldn't say what it was over the phone. "Come to the shop tomorrow," he had said. "I'll show you then."
+
+Grace put down the stitching and walked to the kitchen to make tea. The kettle whistled as it boiled, a sharp sound that cut through the quiet. She poured the water over the tea bag and watched it steep, the water turning a deep amber brown.
+
+Her phone buzzed on the counter. A message from Christopher.
+
+"Can we talk?"
+
+She stared at the screen for a long moment. Then she put the phone face down on the counter and took her tea back to the window.
+
+The rain has continued to fall. Grace sipped her tea and thought about the ledger, about Daniel, about Christopher. About all the threads she was trying to hold together.
+
+At the shop the next morning, Daniel was waiting for her. He looked tired, like he hadn't slept. There were dark circles under his eyes. He had a file folder in his hand.
+
+"I found it," he said. "The ledger. Well, a copy of it."
+
+"A copy?" Grace set her bag down on the counter.
+
+"Burton made a copy before the original was took. I found it in his desk at the old office."
+
+Grace took the folder. Her hands were shaking slightly as she opened it. The pages inside were yellowed at the edges, the handwriting faded but still readable.
+
+"This is it," she whispered. "This is what we've been looking for."`;
+    updateWordCount();
+    uploadStatus.textContent = 'Demo chapter loaded';
+    setStatus('Demo chapter loaded');
+  });
+
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  CLEAR                                        */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  $('clearBtn').addEventListener('click', () => {
+    chapterText.value = '';
+    correctedText.value = '';
+    outputBody.innerHTML = '<div class="empty">Click "Review Chapter" to run the editor.</div>';
+    outputBody.classList.add('empty');
+    state.approved = false;
+    state.lastReport = null;
+    state.lastIssuesList = null;
+    approveBtn.disabled = true;
+    correctedStatus.textContent = 'Waiting for approval...';
+    updateWordCount();
+    uploadStatus.textContent = 'Upload or paste chapter, select mode, click Review';
+    setStatus('Cleared');
+  });
+
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  SAVE TO DATABASE                             */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  $('saveBtn').addEventListener('click', async () => {
+    const text = chapterText.value.trim();
+    if (!text && !state.lastReport) {
+      setStatus('Nothing to save');
+      return;
+    }
+    setStatus('Saving...');
+    $('saveBtn').disabled = true;
+    try {
+      const id = await saveReview({
+        id: state.currentReviewId,
+        mode: state.mode,
+        book: parseInt($('bookSelect').value) || 3,
+        chapter: state.chapterNumber,
+        prevChapter: state.prevChapter,
+        chapterText: text,
+        reportText: state.lastReport || '',
+        correctedText: correctedText.value || '',
+        approved: state.approved
+      });
+      state.currentReviewId = id;
+      await refreshHistory();
+      setStatus('Saved to database');
+    } catch (err) {
+      setStatus('Save failed: ' + err.message);
+    } finally {
+      $('saveBtn').disabled = false;
+    }
+  });
+
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  RUN REVIEW                                   */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  $('runBtn').addEventListener('click', runReview);
+
+  async function runReview() {
+    const text = chapterText.value.trim();
+    if (!text) {
+      outputBody.innerHTML = 'Please paste chapter text before running a review.';
+      outputBody.classList.remove('empty');
+      setStatus('No text to review');
+      return;
+    }
+
+    setStatus('Reviewing with OpenAI...');
+    $('runBtn').disabled = true;
+    $('runBtn').innerHTML = '<span class="spinner"></span> Reviewing...';
+
+    try {
+      const chapter = state.chapterNumber;
+      const prev = state.prevChapter;
+      let reportText;
+
+      if (state.mode === 'copyedit') {
+        reportText = await callOpenAI(buildCopyeditPrompt(text, chapter));
+        outputTitle.textContent = 'Mechanical Issues â€” Quick List';
+      } else {
+        reportText = await callOpenAI(buildContinuityPrompt(text, chapter, prev));
+        outputTitle.textContent = 'Continuity Diagnostic Report';
+      }
+
+      state.lastReport = reportText;
+      state.lastIssuesList = reportText;
+      outputBody.innerHTML = formatReportHtml(reportText);
+      outputBody.classList.remove('empty');
+
+      if (state.mode === 'copyedit') {
+        state.approved = false;
+        approveBtn.disabled = false;
+        correctedText.value = '';
+        correctedStatus.textContent = 'Quick list ready â€” approve to output corrected chapter.';
+      } else {
+        approveBtn.disabled = true;
+        correctedStatus.textContent = 'N/A â€” Continuity mode outputs reports, not corrected text.';
+      }
+
+      // Auto-save after review
+      try {
+        const id = await saveReview({
+          id: state.currentReviewId,
+          mode: state.mode,
+          book: parseInt($('bookSelect').value) || 3,
+          chapter: state.chapterNumber,
+          prevChapter: state.prevChapter,
+          chapterText: text,
+          reportText: reportText,
+          correctedText: '',
+          approved: false
+        });
+        state.currentReviewId = id;
+        await refreshHistory();
+      } catch (saveErr) {
+        setStatus('Review done â€” auto-save failed: ' + saveErr.message);
+        $('runBtn').disabled = false;
+        $('runBtn').innerHTML = '&#9654; Review Chapter';
+        return;
+      }
+
+      setStatus(`Review complete â€” ${state.mode === 'copyedit' ? 'quick list ready for approval' : 'diagnostic report generated'}`);
+    } catch (err) {
+      outputBody.innerHTML = '<p style="color:#a05050;"><strong>Error:</strong> ' + err.message + '</p>';
+      outputBody.classList.remove('empty');
+      setStatus('Review failed');
+    } finally {
+      $('runBtn').disabled = false;
+      $('runBtn').innerHTML = '&#9654; Review Chapter';
+    }
+  }
+
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  APPROVE (Copyedit flow)                      */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  approveBtn.addEventListener('click', async () => {
+    if (state.mode !== 'copyedit') return;
+    if (state.approved) return;
+
+    approveBtn.disabled = true;
+    correctedStatus.textContent = 'Generating corrected chapter...';
+    setStatus('Generating corrected chapter...');
+
+    try {
+      const corrected = await callOpenAI(
+        buildCorrectedPrompt(chapterText.value, state.lastIssuesList || state.lastReport)
+      );
+
+      state.approved = true;
+      correctedText.value = corrected;
+      correctedStatus.textContent = 'Corrected chapter ready â€” only mechanical changes applied.';
+
+      document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.editor-pane').forEach(p => p.classList.remove('active'));
+      document.querySelector('[data-pane="corrected"]').classList.add('active');
+      document.getElementById('pane-corrected').classList.add('active');
+
+      outputBody.innerHTML += `
+        <hr style="border:none;border-top:1px solid #d4ccbc;margin:1rem 0;">
+        <p style="color:#3b2b1a;font-weight:700;">&#10003; Corrected chapter approved and output in the "Corrected Version" tab.</p>
+      `;
+
+      await saveReview({
+        id: state.currentReviewId,
+        mode: state.mode,
+        book: parseInt($('bookSelect').value) || 3,
+        chapter: state.chapterNumber,
+        prevChapter: state.prevChapter,
+        chapterText: chapterText.value,
+        reportText: state.lastReport || '',
+        correctedText: corrected,
+        approved: true
+      });
+      await refreshHistory();
+      setStatus('Corrected chapter output and saved');
+    } catch (err) {
+      correctedStatus.textContent = 'Error: ' + err.message;
+      approveBtn.disabled = false;
+      setStatus('Correction failed');
+    }
+  });
+
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  COPY / CLEAR REPORT                          */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  $('copyReportBtn').addEventListener('click', () => {
+    const text = outputBody.textContent;
+    if (!text || outputBody.classList.contains('empty')) {
+      setStatus('Nothing to copy');
+      return;
+    }
+    navigator.clipboard.writeText(text).then(() => {
+      setStatus('Report copied to clipboard');
+    }).catch(() => {
+      // Fallback
+      const range = document.createRange();
+      range.selectNodeContents(outputBody);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      document.execCommand('copy');
+      sel.removeAllRanges();
+      setStatus('Report copied (fallback)');
+    });
+  });
+
+  $('clearReportBtn').addEventListener('click', () => {
+    outputBody.innerHTML = '<div class="empty">Report cleared.</div>';
+    outputBody.classList.add('empty');
+    state.lastReport = null;
+    setStatus('Report cleared');
+  });
+
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  UTILITY                                      */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  function setStatus(msg) {
+    sessionStatus.textContent = msg;
+  }
+
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /*  INIT                                         */
+  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  updateRules();
+  updateOutputTitle();
+  chDisplay.textContent = state.chapterNumber;
+  refreshHistory().then(() => setStatus('Ready')).catch(() => setStatus('Ready (offline history)'));
+</script>
+
+</body>
+</html>
