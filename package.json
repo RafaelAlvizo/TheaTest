@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "vercel:dev": "vercel dev"
+    "vercel:dev": "vercel dev",
+    "build:prompt": "node -e \"const fs=require('fs');const t=fs.readFileSync('prompt.txt','utf8');fs.writeFileSync('editor-prompt.js','window.EDITOR_PROMPT = '+JSON.stringify(t)+';\\n');\""
   },
   "dependencies": {
     "dotenv": "^16.4.5",

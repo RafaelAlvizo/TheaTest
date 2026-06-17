@@ -688,6 +688,7 @@
   <span id="sessionStatus">Ready</span>
 </div>
 
+<script src="editor-prompt.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -749,8 +750,12 @@
 
   async function loadSystemPrompt() {
     if (SYSTEM_PROMPT) return SYSTEM_PROMPT;
+    if (window.EDITOR_PROMPT) {
+      SYSTEM_PROMPT = window.EDITOR_PROMPT;
+      return SYSTEM_PROMPT;
+    }
     const res = await fetch('/prompt.txt');
-    if (!res.ok) throw new Error('Could not load editor rules (prompt.txt)');
+    if (!res.ok) throw new Error('Could not load editor rules');
     SYSTEM_PROMPT = await res.text();
     return SYSTEM_PROMPT;
   }
@@ -1491,7 +1496,7 @@ ${text}`;
   updateOutputTitle();
   chDisplay.textContent = state.chapterNumber;
   checkAiHealth();
-  loadSystemPrompt().catch(() => setStatus('Warning: could not load editor rules'));
+  loadSystemPrompt().catch(() => {});
   refreshHistory().then(() => setStatus('Ready — upload your chapter to begin')).catch(() => setStatus('Ready'));
 </script>
 
