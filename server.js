@@ -5,8 +5,15 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json({ limit: '2mb' }));
-app.use(express.static(path.join(__dirname)));
+app.use(express.json({ limit: '4mb' }));
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    ok: true,
+    aiConfigured: !!(process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.includes('your-openai')),
+    model: process.env.OPENAI_MODEL || 'gpt-4o'
+  });
+});
 
 app.post('/api/review', async (req, res) => {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -16,9 +23,12 @@ app.post('/api/review', async (req, res) => {
     return res.status(500).json({ error: 'OpenAI API key not configured in .env' });
   }
 
-  const { systemPrompt, userPrompt } = req.body;
-  if (!userPrompt) {
+  const { systemPrompt, userPrompt } = req.body || {};
+  if (!userPrompt || !String(userPrompt).trim()) {
     return res.status(400).json({ error: 'userPrompt is required' });
+  }
+  if (!systemPrompt || !String(systemPrompt).trim()) {
+    return res.status(400).json({ error: 'systemPrompt is required' });
   }
 
   try {
@@ -31,10 +41,10 @@ app.post('/api/review', async (req, res) => {
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
+          { role: 'system', content: String(systemPrompt) },
+          { role: 'user', content: String(userPrompt) }
         ],
-        temperature: 0.3
+        temperature: 0.2
       })
     });
 
@@ -45,15 +55,27 @@ app.post('/api/review', async (req, res) => {
       });
     }
 
-    res.json({ content: data.choices[0].message.content.trim() });
+    const content = data.choices?.[0]?.message?.content?.trim();
+    if (!content) {
+      return res.status(502).json({ error: 'OpenAI returned an empty response' });
+    }
+
+    res.json({
+      content,
+      model: data.model || model,
+      usage: data.usage || null
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    const msg = err.cause?.message || err.message || 'Unexpected server error';
+    res.status(500).json({ error: msg });
   }
 });
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+
+app.use(express.static(path.join(__dirname)));
 
 const server = app.listen(PORT, () => {
   console.log(`Fiction editor running at http://localhost:${PORT}`);

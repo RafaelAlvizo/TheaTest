@@ -7,12 +7,21 @@ module.exports = async (req, res) => {
   const model = process.env.OPENAI_MODEL || 'gpt-4o';
 
   if (!apiKey || apiKey.includes('your-openai')) {
-    return res.status(500).json({ error: 'OpenAI API key not configured in Vercel environment variables' });
+    return res.status(500).json({ error: 'OpenAI API key not configured. Add OPENAI_API_KEY in Vercel environment variables.' });
   }
 
-  const { systemPrompt, userPrompt } = req.body || {};
-  if (!userPrompt) {
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch { body = {}; }
+  }
+  body = body || {};
+
+  const { systemPrompt, userPrompt } = body;
+  if (!userPrompt || !String(userPrompt).trim()) {
     return res.status(400).json({ error: 'userPrompt is required' });
+  }
+  if (!systemPrompt || !String(systemPrompt).trim()) {
+    return res.status(400).json({ error: 'systemPrompt is required' });
   }
 
   try {
@@ -25,10 +34,10 @@ module.exports = async (req, res) => {
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: systemPrompt || '' },
-          { role: 'user', content: userPrompt }
+          { role: 'system', content: String(systemPrompt) },
+          { role: 'user', content: String(userPrompt) }
         ],
-        temperature: 0.3
+        temperature: 0.2
       })
     });
 
@@ -39,8 +48,17 @@ module.exports = async (req, res) => {
       });
     }
 
-    res.json({ content: data.choices[0].message.content.trim() });
+    const content = data.choices?.[0]?.message?.content?.trim();
+    if (!content) {
+      return res.status(502).json({ error: 'OpenAI returned an empty response' });
+    }
+
+    res.json({
+      content,
+      model: data.model || model,
+      usage: data.usage || null
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message || 'Unexpected server error' });
   }
 };

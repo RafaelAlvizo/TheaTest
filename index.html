@@ -186,6 +186,75 @@
     }
     .upload-label { cursor: pointer; margin: 0; }
 
+    .drop-zone {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 280px;
+      position: relative;
+    }
+    .drop-zone.dragover textarea { background: #fff; border: 2px dashed #c9a84c; }
+    .drop-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(201, 168, 76, 0.12);
+      border: 2px dashed #c9a84c;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #3b2b1a;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .drop-zone.dragover .drop-overlay { display: flex; }
+
+    .ref-section { margin-top: 1.2rem; }
+    .ref-list { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.3rem; max-height: 140px; overflow-y: auto; }
+    .ref-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.5rem;
+      background: #f4f1ea;
+      border: 1px solid #d4ccbc;
+      border-radius: 4px;
+      font-size: 0.72rem;
+    }
+    .ref-item .ref-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ref-item button {
+      border: none;
+      background: transparent;
+      color: #a05050;
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 0 0.2rem;
+    }
+    .ref-hint { font-size: 0.7rem; color: #8a7b67; margin-top: 0.35rem; line-height: 1.4; }
+
+    .analysis-banner {
+      background: #e8f4e8;
+      border: 1px solid #6b9e6b;
+      border-radius: 6px;
+      padding: 0.6rem 0.8rem;
+      margin-bottom: 1rem;
+      font-size: 0.8rem;
+      color: #2c4a2c;
+    }
+    .analysis-banner.error {
+      background: #faf0f0;
+      border-color: #a05050;
+      color: #6b3030;
+    }
+    .analysis-loading {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #6b5c48;
+      font-style: italic;
+    }
+
     /* Buttons */
     .btn {
       padding: 0.5rem 1.2rem;
@@ -530,6 +599,14 @@
       </div>
     </details>
 
+    <div class="ref-section">
+      <h3>Reference Files</h3>
+      <label class="btn btn-sm upload-label" for="refUpload" style="display:inline-block;margin-top:0.3rem;">Add reference files</label>
+      <input type="file" id="refUpload" class="file-input-hidden" multiple accept=".txt,.md,.text,.rtf,.docx,text/plain">
+      <div class="ref-list" id="refList"></div>
+      <p class="ref-hint">Upload series bible, character notes, timelines, or earlier chapters. Continuity mode uses these for real cross-checking.</p>
+    </div>
+
     <div class="history-section">
       <h3>Saved Reviews</h3>
       <div class="history-list" id="historyList">
@@ -550,9 +627,8 @@
       </div>
       <div class="toolbar-actions">
         <button class="btn btn-sm" id="clearBtn" title="Clear chapter text">Clear</button>
-        <label class="btn btn-sm upload-label" for="uploadInput" title="Upload a chapter file (.txt, .md)">Upload</label>
-        <input type="file" id="uploadInput" class="file-input-hidden" accept=".txt,.md,.text,.rtf,text/plain,text/markdown">
-        <button class="btn btn-sm" id="sampleBtn" title="Load demo chapter">Demo</button>
+        <label class="btn btn-sm upload-label" for="uploadInput" title="Upload chapter (.txt, .md, .docx)">Upload Chapter</label>
+        <input type="file" id="uploadInput" class="file-input-hidden" accept=".txt,.md,.text,.rtf,.docx,text/plain">
         <button class="btn btn-sm" id="saveBtn" title="Save to database">Save</button>
         <button class="btn btn-gold" id="runBtn">&#9654; Review Chapter</button>
       </div>
@@ -567,10 +643,13 @@
 
       <!-- Input pane -->
       <div class="editor-pane active" id="pane-input">
-        <textarea id="chapterText" placeholder="Paste your chapter text here...&#10;&#10;The editor will review it for mechanical issues (Copyedit Mode) or continuity problems (Continuity Diagnosis Mode)."></textarea>
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-overlay">Drop chapter file here</div>
+          <textarea id="chapterText" placeholder="Upload your chapter file or paste text here, then click Review Chapter for a real AI analysis."></textarea>
+        </div>
         <div class="pane-footer">
           <span id="wordCount">0 words</span>
-          <span id="uploadStatus">Upload or paste chapter, select mode, click Review</span>
+          <span id="uploadStatus">Upload or paste your chapter, then click Review</span>
         </div>
       </div>
 
@@ -594,7 +673,7 @@
         </div>
       </div>
       <div class="output-body empty" id="outputBody">
-        Click "Review Chapter" to run the editor.
+        Upload or paste your chapter, then click Review Chapter. The AI will analyze your actual text — not a demo placeholder.
       </div>
     </div>
 
@@ -605,9 +684,11 @@
 <div class="status-bar">
   <span>Project: <strong>Book 3, A Pattern of Lies</strong></span>
   <span>Backend: <strong id="backendStatus">Firebase + OpenAI</strong></span>
+  <span id="aiStatus">AI: checking...</span>
   <span id="sessionStatus">Ready</span>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
@@ -630,6 +711,10 @@
   const dbStatus      = $('dbStatus');
   const uploadInput   = $('uploadInput');
   const uploadStatus  = $('uploadStatus');
+  const refUpload     = $('refUpload');
+  const refList       = $('refList');
+  const dropZone      = $('dropZone');
+  const aiStatus      = $('aiStatus');
 
   /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   /*  FIREBASE                                       */
@@ -658,39 +743,95 @@
 
   /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   /*  OPENAI / PROMPTS                             */
-  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  const SYSTEM_PROMPT = `Overall Project Instructions You are my fiction editor for the Threadneedle Street Mysteries series. This Project has two modes. Use the mode I request. If unclear, ask whether I want Copyedit Mode or Continuity Diagnosis Mode.
+  /* ───────────────────────────────────────────── */
+  let SYSTEM_PROMPT = '';
+  const MAX_REF_CHARS = 80000;
 
-MODE 1: COPYEDIT MODE â€” Use only when I ask for spelling, punctuation, grammar, syntax, typos, formatting, or mechanical corrections. Review only the submitted chapter text. Do not check continuity unless asked. First provide a quick list of mechanical issues found. Do not output the corrected chapter until I approve. After approval, output the corrected chapter with only mechanical corrections. Do not improve style, flow, voice, pacing, dialogue, characterization, or creative choices. Flag repeated words that appear too close together at the mechanical level only.
+  async function loadSystemPrompt() {
+    if (SYSTEM_PROMPT) return SYSTEM_PROMPT;
+    const res = await fetch('/prompt.txt');
+    if (!res.ok) throw new Error('Could not load editor rules (prompt.txt)');
+    SYSTEM_PROMPT = await res.text();
+    return SYSTEM_PROMPT;
+  }
 
-MODE 2: CONTINUITY DIAGNOSIS MODE â€” Use when I ask for continuity, repetition, timeline, character consistency, clue/evidence, motivation, scene logic, relationship/emotional continuity, or editorial diagnosis. Editorial diagnosis only â€” do not rewrite or polish. Use the Flag [number] and Repetition [number] formats. Include Top 3 issues, questions for author, and new canonical facts.`;
+  async function checkAiHealth() {
+    try {
+      const res = await fetch('/api/health');
+      const data = await res.json();
+      if (data.aiConfigured) {
+        aiStatus.innerHTML = 'AI: <strong style="color:#3d6b3d">connected (' + (data.model || 'gpt-4o') + ')</strong>';
+      } else {
+        aiStatus.innerHTML = 'AI: <strong style="color:#a05050">not configured</strong>';
+      }
+    } catch {
+      aiStatus.innerHTML = 'AI: <strong style="color:#a05050">offline</strong>';
+    }
+  }
 
   async function callOpenAI(userPrompt) {
+    const systemPrompt = await loadSystemPrompt();
     const response = await fetch('/api/review', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemPrompt: SYSTEM_PROMPT,
-        userPrompt: userPrompt
-      })
+      body: JSON.stringify({ systemPrompt, userPrompt })
     });
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Review request failed (' + response.status + ')');
+    const raw = await response.text();
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      throw new Error('Server returned an invalid response (HTTP ' + response.status + '). Make sure OPENAI_API_KEY is set on Vercel.');
     }
-    return data.content;
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Review request failed (HTTP ' + response.status + ')');
+    }
+    if (!data.content || !String(data.content).trim()) {
+      throw new Error('AI returned an empty response. Please try again.');
+    }
+
+    state.lastModel = data.model || 'gpt-4o';
+    state.lastUsage = data.usage || null;
+    return String(data.content).trim();
+  }
+
+  function buildReferenceBlock() {
+    if (!state.referenceFiles.length) {
+      return 'No reference files uploaded. Analyze the chapter on its own. For any continuity check that needs prior books/chapters, say "not found in provided context."';
+    }
+    let block = 'REFERENCE MATERIAL (use as source for continuity and proper nouns):\n\n';
+    let total = 0;
+    for (const file of state.referenceFiles) {
+      const slice = file.content.slice(0, MAX_REF_CHARS - total);
+      block += '--- ' + file.name + ' ---\n' + slice + '\n\n';
+      total += slice.length;
+      if (total >= MAX_REF_CHARS) {
+        block += '[Reference material truncated due to length limit.]\n';
+        break;
+      }
+    }
+    return block;
   }
 
   function buildCopyeditPrompt(text, chapter) {
+    const refs = state.referenceFiles.length
+      ? '\n\nUse these reference files only to confirm names, places, and recurring proper nouns:\n' + buildReferenceBlock()
+      : '';
+
     return `Please review the following chapter in Copyedit Mode.
 
 Book: Book 3, A Pattern of Lies
 Chapter: Chapter ${chapter}
 
-Review only for spelling, punctuation, grammar, syntax, typos, formatting, proper nouns, and accidental repeated words. Do not check continuity. Do not rewrite for style. First, give me a quick list of all mechanical issues you find. Do not output the corrected chapter yet.
+Review ONLY the chapter text below for spelling, punctuation, grammar, syntax, typos, formatting, proper nouns, and accidental repeated words. Do not check continuity. Do not rewrite for style.
 
-Chapter text:
+You MUST quote exact phrases from the chapter for every issue you flag. If you find no issues, say "No mechanical issues found" and explain briefly what you checked.
+
+Do not output the corrected chapter yet — only the quick list.${refs}
+
+CHAPTER TEXT TO ANALYZE:
 ${text}`;
   }
 
@@ -699,16 +840,20 @@ ${text}`;
 
 Book: Book 3, A Pattern of Lies
 Chapter: Chapter ${chapter}
-Placement: This chapter comes after Book 3, Chapter ${prev}, and after Books 1â€“2.
+Placement: This chapter comes after Book 3, Chapter ${prev}, and after Books 1–2.
 
-Review only for editorial diagnosis issues. Do not rewrite the chapter. Return a clean diagnostic report using the Project's continuity flag format.
+Review ONLY for editorial diagnosis. Do not rewrite the chapter.
 
-Chapter text:
+You MUST use the Flag [number] and Repetition [number] formats from the system instructions. Quote exact phrases from the chapter for every flag. Cross-check against the reference material below when provided. If a fact is not in the reference material, say "not found in provided context."
+
+${buildReferenceBlock()}
+
+CHAPTER TEXT TO ANALYZE:
 ${text}`;
   }
 
   function buildCorrectedPrompt(text, issuesList) {
-    return `I approved the mechanical issue list below. Output the corrected chapter with ONLY mechanical corrections applied. Do not improve style, voice, pacing, or creative choices. Output only the corrected chapter text â€” no commentary.
+    return `I approved the mechanical issue list below. Output the corrected chapter with ONLY mechanical corrections applied. Do not improve style, voice, pacing, or creative choices. Output only the corrected chapter text — no commentary.
 
 Approved issues to fix:
 ${issuesList}
@@ -717,17 +862,107 @@ Original chapter text:
 ${text}`;
   }
 
-  function formatReportHtml(text) {
+  function formatReportHtml(text, meta) {
+    let html = '';
+    if (meta) {
+      html += '<div class="analysis-banner">' + meta + '</div>';
+    }
     const escaped = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
-    const html = escaped
+    html += '<div class="ai-report">' + escaped
       .replace(/^### (.+)$/gm, '<h4>$1</h4>')
       .replace(/^## (.+)$/gm, '<h4>$1</h4>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>');
-    return '<div class="ai-report">' + html + '</div>';
+      .replace(/\*(.+?)\*/g, '<em>$1</em>') + '</div>';
+    return html;
+  }
+
+  function buildAnalysisMeta(wordCount, mode) {
+    const modeLabel = mode === 'copyedit' ? 'Copyedit' : 'Continuity Diagnosis';
+    const tokens = state.lastUsage?.total_tokens ? ' · ~' + state.lastUsage.total_tokens + ' tokens' : '';
+    const refs = state.referenceFiles.length ? ' · ' + state.referenceFiles.length + ' reference file(s)' : '';
+    return '&#10003; Real AI analysis complete · ' + modeLabel + ' · ' + wordCount + ' words analyzed · ' + (state.lastModel || 'gpt-4o') + tokens + refs + ' · ' + new Date().toLocaleString();
+  }
+
+  async function readFileAsText(file) {
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (ext === 'docx') {
+      if (typeof mammoth === 'undefined') throw new Error('DOCX support failed to load');
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      return result.value || '';
+    }
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result || '');
+      reader.onerror = () => reject(new Error('Failed to read ' + file.name));
+      reader.readAsText(file);
+    });
+  }
+
+  function renderRefList() {
+    if (!state.referenceFiles.length) {
+      refList.innerHTML = '';
+      return;
+    }
+    refList.innerHTML = state.referenceFiles.map((f, i) =>
+      '<div class="ref-item"><span class="ref-name" title="' + f.name + '">' + f.name + ' (' + f.content.split(/\s+/).length + ' words)</span><button type="button" data-idx="' + i + '" aria-label="Remove">&#10005;</button></div>'
+    ).join('');
+    refList.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.referenceFiles.splice(parseInt(btn.dataset.idx, 10), 1);
+        renderRefList();
+        setStatus('Reference file removed');
+      });
+    });
+  }
+
+  async function loadChapterFromFile(file) {
+    const allowed = /\.(txt|md|text|rtf|docx)$/i;
+    if (!allowed.test(file.name)) {
+      throw new Error('Unsupported file type — use .txt, .md, or .docx');
+    }
+    const content = (await readFileAsText(file)).trim();
+    if (!content) throw new Error('File appears to be empty');
+
+    chapterText.value = content;
+    updateWordCount();
+
+    const chapterMatch = file.name.match(/chapter[\s_-]*(\d+)/i);
+    if (chapterMatch) {
+      state.chapterNumber = parseInt(chapterMatch[1], 10);
+      $('chapterNum').value = state.chapterNumber;
+      chDisplay.textContent = state.chapterNumber;
+    }
+
+    state.currentReviewId = null;
+    state.approved = false;
+    state.lastReport = null;
+    state.lastIssuesList = null;
+    correctedText.value = '';
+    approveBtn.disabled = true;
+    correctedStatus.textContent = 'Waiting for approval...';
+    uploadStatus.textContent = 'Loaded: ' + file.name + ' (' + content.split(/\s+/).length + ' words)';
+    setStatus('Chapter loaded: ' + file.name);
+  }
+
+  async function addReferenceFiles(fileList) {
+    for (const file of fileList) {
+      const allowed = /\.(txt|md|text|rtf|docx)$/i;
+      if (!allowed.test(file.name)) {
+        setStatus('Skipped ' + file.name + ' — use .txt, .md, or .docx');
+        continue;
+      }
+      const content = (await readFileAsText(file)).trim();
+      if (!content) continue;
+      state.referenceFiles.push({ name: file.name, content });
+    }
+    renderRefList();
+    if (state.referenceFiles.length) {
+      setStatus(state.referenceFiles.length + ' reference file(s) ready for analysis');
+    }
   }
 
   /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -853,7 +1088,10 @@ ${text}`;
     lastReport: null,
     lastIssuesList: null,
     currentReviewId: null,
-    historyItems: []
+    historyItems: [],
+    referenceFiles: [],
+    lastModel: null,
+    lastUsage: null
   };
 
   /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -981,87 +1219,56 @@ ${text}`;
     });
   });
 
-  uploadInput.addEventListener('change', () => {
+  uploadInput.addEventListener('change', async () => {
     const file = uploadInput.files[0];
     if (!file) return;
-
-    const allowed = /\.(txt|md|text|rtf)$/i;
-    if (!allowed.test(file.name)) {
-      setStatus('Unsupported file type — use .txt or .md');
-      uploadInput.value = '';
-      return;
+    try {
+      await loadChapterFromFile(file);
+    } catch (err) {
+      setStatus('Upload failed: ' + err.message);
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      chapterText.value = reader.result;
-      updateWordCount();
-
-      const chapterMatch = file.name.match(/chapter[\s_-]*(\d+)/i);
-      if (chapterMatch) {
-        state.chapterNumber = parseInt(chapterMatch[1], 10);
-        $('chapterNum').value = state.chapterNumber;
-        chDisplay.textContent = state.chapterNumber;
-      }
-
-      state.currentReviewId = null;
-      state.approved = false;
-      state.lastReport = null;
-      state.lastIssuesList = null;
-      correctedText.value = '';
-      approveBtn.disabled = true;
-      correctedStatus.textContent = 'Waiting for approval...';
-      uploadStatus.textContent = 'Loaded: ' + file.name;
-      setStatus('Uploaded ' + file.name);
-      uploadInput.value = '';
-    };
-    reader.onerror = () => {
-      setStatus('Failed to read file');
-      uploadInput.value = '';
-    };
-    reader.readAsText(file);
+    uploadInput.value = '';
   });
 
-  $('sampleBtn').addEventListener('click', () => {
-    chapterText.value = `Chapter 12
-
-Grace stood at the window of her flat on Threadneedle Street, watching the rain fall on the wet cobblestones below. The the street lamps cast long shadows across the pavement, and she could see her own reflection in the glass. She had been staring at the same page of stitching for over an hour, the needle still in her hand, the thread waiting.
-
-Daniel had called earlier. He said he had found something. Something about the missing ledger. But he wouldn't say what it was over the phone. "Come to the shop tomorrow," he had said. "I'll show you then."
-
-Grace put down the stitching and walked to the kitchen to make tea. The kettle whistled as it boiled, a sharp sound that cut through the quiet. She poured the water over the tea bag and watched it steep, the water turning a deep amber brown.
-
-Her phone buzzed on the counter. A message from Christopher.
-
-"Can we talk?"
-
-She stared at the screen for a long moment. Then she put the phone face down on the counter and took her tea back to the window.
-
-The rain has continued to fall. Grace sipped her tea and thought about the ledger, about Daniel, about Christopher. About all the threads she was trying to hold together.
-
-At the shop the next morning, Daniel was waiting for her. He looked tired, like he hadn't slept. There were dark circles under his eyes. He had a file folder in his hand.
-
-"I found it," he said. "The ledger. Well, a copy of it."
-
-"A copy?" Grace set her bag down on the counter.
-
-"Burton made a copy before the original was took. I found it in his desk at the old office."
-
-Grace took the folder. Her hands were shaking slightly as she opened it. The pages inside were yellowed at the edges, the handwriting faded but still readable.
-
-"This is it," she whispered. "This is what we've been looking for."`;
-    updateWordCount();
-    uploadStatus.textContent = 'Demo chapter loaded';
-    setStatus('Demo chapter loaded');
+  refUpload.addEventListener('change', async () => {
+    if (!refUpload.files.length) return;
+    try {
+      await addReferenceFiles(Array.from(refUpload.files));
+    } catch (err) {
+      setStatus('Reference upload failed: ' + err.message);
+    }
+    refUpload.value = '';
   });
 
-  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  ['dragenter', 'dragover'].forEach(evt => {
+    dropZone.addEventListener(evt, e => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+  });
+  ['dragleave', 'drop'].forEach(evt => {
+    dropZone.addEventListener(evt, e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+    });
+  });
+  dropZone.addEventListener('drop', async e => {
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    try {
+      await loadChapterFromFile(file);
+    } catch (err) {
+      setStatus('Drop failed: ' + err.message);
+    }
+  });
+
+  /* ───────────────────────────────────────────── */
   /*  CLEAR                                        */
-  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ───────────────────────────────────────────── */
   $('clearBtn').addEventListener('click', () => {
     chapterText.value = '';
     correctedText.value = '';
-    outputBody.innerHTML = '<div class="empty">Click "Review Chapter" to run the editor.</div>';
+    outputBody.innerHTML = '<div class="empty">Upload or paste your chapter, then click Review Chapter.</div>';
     outputBody.classList.add('empty');
     state.approved = false;
     state.lastReport = null;
@@ -1114,24 +1321,28 @@ Grace took the folder. Her hands were shaking slightly as she opened it. The pag
   async function runReview() {
     const text = chapterText.value.trim();
     if (!text) {
-      outputBody.innerHTML = 'Please paste chapter text before running a review.';
+      outputBody.innerHTML = '<p>Please upload or paste your chapter text before running a review.</p>';
       outputBody.classList.remove('empty');
       setStatus('No text to review');
       return;
     }
 
-    setStatus('Reviewing with OpenAI...');
+    const wordCountNum = text.split(/\s+/).length;
+    setStatus('Sending ' + wordCountNum + ' words to AI for analysis...');
     $('runBtn').disabled = true;
-    $('runBtn').innerHTML = '<span class="spinner"></span> Reviewing...';
+    $('runBtn').innerHTML = '<span class="spinner"></span> Analyzing...';
+    outputBody.innerHTML = '<div class="analysis-loading"><span class="spinner"></span> AI is reading and analyzing your chapter (' + wordCountNum + ' words). This may take 30–60 seconds...</div>';
+    outputBody.classList.remove('empty');
 
     try {
+      await loadSystemPrompt();
       const chapter = state.chapterNumber;
       const prev = state.prevChapter;
       let reportText;
 
       if (state.mode === 'copyedit') {
         reportText = await callOpenAI(buildCopyeditPrompt(text, chapter));
-        outputTitle.textContent = 'Mechanical Issues â€” Quick List';
+        outputTitle.textContent = 'Mechanical Issues — Quick List';
       } else {
         reportText = await callOpenAI(buildContinuityPrompt(text, chapter, prev));
         outputTitle.textContent = 'Continuity Diagnostic Report';
@@ -1139,7 +1350,7 @@ Grace took the folder. Her hands were shaking slightly as she opened it. The pag
 
       state.lastReport = reportText;
       state.lastIssuesList = reportText;
-      outputBody.innerHTML = formatReportHtml(reportText);
+      outputBody.innerHTML = formatReportHtml(reportText, buildAnalysisMeta(wordCountNum, state.mode));
       outputBody.classList.remove('empty');
 
       if (state.mode === 'copyedit') {
@@ -1176,7 +1387,7 @@ Grace took the folder. Her hands were shaking slightly as she opened it. The pag
 
       setStatus(`Review complete â€” ${state.mode === 'copyedit' ? 'quick list ready for approval' : 'diagnostic report generated'}`);
     } catch (err) {
-      outputBody.innerHTML = '<p style="color:#a05050;"><strong>Error:</strong> ' + err.message + '</p>';
+      outputBody.innerHTML = '<div class="analysis-banner error"><strong>Analysis failed:</strong> ' + err.message + '</div>';
       outputBody.classList.remove('empty');
       setStatus('Review failed');
     } finally {
@@ -1279,7 +1490,9 @@ Grace took the folder. Her hands were shaking slightly as she opened it. The pag
   updateRules();
   updateOutputTitle();
   chDisplay.textContent = state.chapterNumber;
-  refreshHistory().then(() => setStatus('Ready')).catch(() => setStatus('Ready (offline history)'));
+  checkAiHealth();
+  loadSystemPrompt().catch(() => setStatus('Warning: could not load editor rules'));
+  refreshHistory().then(() => setStatus('Ready — upload your chapter to begin')).catch(() => setStatus('Ready'));
 </script>
 
 </body>
